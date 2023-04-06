@@ -16,64 +16,92 @@ export default class Main {
   }
 
   async render() {
-    this.carousel = new Carousel(slides);
-    let carouselHolder = document.querySelector('[data-carousel-holder]');
-    carouselHolder.append(this.carousel.elem);
+    this.renderCarousel();
+    this.renderRibbon();
+    this.renderStepSlider();
+    this.renderCartIcon()
 
-    this.ribbonMenu = new RibbonMenu(categories);
-    let ribbonHolder = document.querySelector('[data-ribbon-holder]');
-    ribbonHolder.append(this.ribbonMenu.elem);
-
-    this.stepSlider = new StepSlider({steps: 5, value: 3});
-    let sliderHolder = document.querySelector('[data-slider-holder]');
-    sliderHolder.append(this.stepSlider.elem);
-
-    this.cartIcon = new CartIcon();
-    let cartIconHolder = document.querySelector('[data-cart-icon-holder]');
-    cartIconHolder.append(this.cartIcon.elem);
-    
     this.cart = new Cart(this.cartIcon);
-    
-    let url = 'products.json';
-    let response = await fetch(url);    
-    this.products = await response.json();
 
-    this.productsGrid = new ProductsGrid(this.products);
-    let productsHolder = document.querySelector('[data-products-grid-holder]');
-    productsHolder.innerHTML = '';
-    productsHolder.append(this.productsGrid.elem);
+    this.products = await this.fetchProducts();
+
+    this.renderProductsGrid();
+
     this.productsGrid.updateFilter({
       noNuts: document.getElementById('nuts-checkbox').checked,
       vegeterianOnly: document.getElementById('vegeterian-checkbox').checked,
       maxSpiciness: this.stepSlider.value,
       category: this.ribbonMenu.value
     });
-    // addEventListeners
-    document.body.addEventListener('product-add', ({detail: productId}) => {
-      let findCart = this.products.find(product => product.id == productId);
-      this.cart.addProduct(findCart);      
+
+    document.body.addEventListener('product-add', ({ detail: productId }) => {
+      let product = this.products.find(product => product.id == productId);
+      this.cart.addProduct(product);
     });
 
-    document.body.addEventListener('slider-change', ({detail: value}) => {     
-      this.productsGrid.updateFilter({ maxSpiciness: value });
+    this.stepSlider.elem.addEventListener('slider-change', ({ detail: value }) => {
+      this.productsGrid.updateFilter({
+        maxSpiciness: value
+      });
     });
 
-    document.body.addEventListener('ribbon-select', ({detail: categoryId}) => {
-      this.productsGrid.updateFilter({ category: categoryId });
+    this.ribbonMenu.elem.addEventListener('ribbon-select', ({ detail: categoryId }) => {
+      this.productsGrid.updateFilter({
+        category: categoryId
+      });
     });
 
-    let checkNoNuts = document.querySelector('#nuts-checkbox');
-    checkNoNuts.addEventListener('change', event => {
+    document.getElementById('nuts-checkbox').onchange = event => {
       this.productsGrid.updateFilter({
         noNuts: event.target.checked
-      });      
-    });
+      });
+    };
 
-    let checkVegeterianOnly = document.querySelector('#vegeterian-checkbox');
-    checkVegeterianOnly.addEventListener('change', event => {
+    document.getElementById('vegeterian-checkbox').onchange = event => {
       this.productsGrid.updateFilter({
         vegeterianOnly: event.target.checked
       });
+    };
+  }
+
+  renderCarousel() {
+    this.carousel = new Carousel(slides);
+
+    document.querySelector('[data-carousel-holder]').append(this.carousel.elem);
+  }
+
+  renderRibbon() {
+    this.ribbonMenu = new RibbonMenu(categories);
+
+    document.querySelector('[data-ribbon-holder]').append(this.ribbonMenu.elem);
+  }
+
+  renderStepSlider() {
+    this.stepSlider = new StepSlider({
+      steps: 5,
+      value: 3
     });
+
+    document.querySelector('[data-slider-holder]').append(this.stepSlider.elem);
+  }
+
+  renderCartIcon() {
+    let cartIconHolder = document.querySelector('[data-cart-icon-holder]');
+    this.cartIcon = new CartIcon();
+
+    cartIconHolder.append(this.cartIcon.elem);
+  }
+
+  renderProductsGrid() {
+    this.productsGrid = new ProductsGrid(this.products);
+    document.querySelector('[data-products-grid-holder]').innerHTML = '';
+    document.querySelector('[data-products-grid-holder]').append(this.productsGrid.elem);
+  }
+
+  async fetchProducts() {
+    let response = await fetch('products.json');
+    let products = await response.json();
+
+    return products;
   }
 }
